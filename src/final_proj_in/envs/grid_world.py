@@ -237,8 +237,8 @@ class GridWorldEnv(gym.Env):
         # Unused goal state
         if agent_location != self._target_location.tolist():
             if agent_location in [goal.tolist() for goal in self.goal_states]:
-                # print('unused')
-                return -10 - cold
+                print('unused')
+                return -150 - cold
 
         # Road
         if agent_location[1] == 0:
