@@ -1,0 +1,8 @@
+requirements.txt
+\logs\**
+.idea
+**\__pycache__\**
+**\**\__pycache__\**
+\tensorboard_logs
+**.pyc
+\logs\

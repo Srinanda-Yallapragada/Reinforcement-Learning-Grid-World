@@ -1,6 +1,6 @@
 import gymnasium as gym
 
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import PPO, DQN, SAC
 # use DQN
 # SAC
 # PPO
@@ -26,7 +26,7 @@ eval_callback = EvalCallback(eval_env, best_model_save_path="./logs/",
                              deterministic=True, render=False)
 
 model = PPO("MultiInputPolicy", "GridWorld-v0", device='cpu', tensorboard_log=tensorboard_log_dir)
-model.learn(30000, callback=eval_callback)
+model.learn(100000, callback=eval_callback)
 
 
 # Evaluate the trained model with human rendering
