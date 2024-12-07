@@ -11,7 +11,12 @@ observations_list = []
 total_reward = 0
 
 # actions = [0, 0, 0, 0, 0, 0, 0, 0, 0,1,3]
-actions = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1]
+# 0: np.array([1, 0]),  # right
+# 1: np.array([0, 1]),  # down
+# 2: np.array([-1, 0]),  # left
+# 3: np.array([0, -1]),  # up
+# actions = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 1]
+actions = [0,0,1,1,1,1,1,1,0,0,0,0,1,0,0,0,1,1]
 
 for step, action in enumerate(actions):
 

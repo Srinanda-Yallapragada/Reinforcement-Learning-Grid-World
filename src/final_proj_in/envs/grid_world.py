@@ -6,13 +6,12 @@ import numpy as np
 
 
 class GridWorldEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 8}
 
     def __init__(self, render_mode=None):
         self.size = 10
         self.cold_val = 1
         self.window_size = 512
-
         #
         self.observation_space = spaces.Dict({
             "student": spaces.Box(0, self.size - 1, shape=(2,), dtype=int),
@@ -37,8 +36,9 @@ class GridWorldEnv(gym.Env):
         self.student_location = np.array([0, 0])  # Starting position
         self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
 
-        self.goal_states = [[9, 9], [8, 8]]
+        self.goal_states = [[9, 9], [9, 4],[4,9]]
         self.warm_buildings = [[2, 3], [2, 4], [4, 6], [2, 8], [7, 7], [7, 3]]
+        self.snow = [[2, 5],[3,5],[3,4]]
         self.road = [[x, 0] for x in range(10)]
 
     def _get_obs(self):
@@ -49,10 +49,11 @@ class GridWorldEnv(gym.Env):
 
         # These will be reset every time in the reset function
         self.student_location = np.array([0, 0])  # Starting position
-        self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
+        # self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
 
-        #self.goal_location= random.choice(self.goal_states)
+        self.goal_location= np.array(random.choice(self.goal_states))
         observation = self._get_obs()
+        self.cold_val=1
 
         if self.render_mode == "human":
             self._render_frame()
@@ -65,9 +66,22 @@ class GridWorldEnv(gym.Env):
         direction = self.actions[action]
 
         # student stays on the grid.
-        self.student_location = np.clip(
-            self.student_location + direction, 0, self.size - 1
-        )
+        # self.student_location = np.clip(
+        #     self.student_location + direction, 0, self.size - 1
+        # )
+        if self.student_location.tolist() in self.snow:
+            possible_next_states = [
+                np.clip(self.student_location + direction, 0, self.size - 1),
+                self.student_location,
+            ]
+            probabilities = [0.3, 0.7]
+            ind= np.random.choice(range(len(possible_next_states)), p=probabilities)
+            self.student_location=possible_next_states[ind]
+
+        else:
+            self.student_location = np.clip(
+                self.student_location + direction, 0, self.size - 1
+            )
 
         # If reached terminal state, set to true
         reached_terminal_state = np.array_equal(self.student_location, self.goal_location)
@@ -138,6 +152,16 @@ class GridWorldEnv(gym.Env):
                     (pix_square_size, pix_square_size),
                 ),
             )
+        for i in self.snow:
+            i = np.array(i)
+            pygame.draw.rect(
+                canvas,
+                (0, 250, 0),
+                pygame.Rect(
+                    pix_square_size * i,
+                    (pix_square_size, pix_square_size),
+                ),
+            )
         # First we draw the target
         pygame.draw.rect(
             canvas,
@@ -191,39 +215,40 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
+    # def reward_fn(self, reached_terminal_state):
+    #     if reached_terminal_state:
+    #         print("good")
+    #         return 100
+    #     if self.student_location.tolist() in self.goal_states:
+    #         print("bad")
+    #         return -100
+
+    #     # by default -2 for all snow locations
+    #     return -2
+
     def reward_fn(self, reached_terminal_state):
+        cold = self.cold_val
+        agent_location = self.student_location.tolist()
+
+        # Goal state
         if reached_terminal_state:
-            print("good")
-            return 100
-        if self.student_location.tolist() in self.goal_states:
-            print("bad")
-            return -100
+            return 100 - cold
 
-        # by default -2 for all snow locations
-        return -2
+        # Buildings
+        if agent_location in self.warm_buildings:
+            self.cold_val = 0
+            return -0.1 - cold
 
-    # def reward_fn(self):
-    #     cold = self.cold_val
-    #     agent_location = self.student_location.tolist()
-    #     # Buildings
-    #     if agent_location in self.warm_buildings:
-    #         self.cold_val = 1
-    #         return -0.1 - cold
-    #
-    #     # Goal state
-    #     if agent_location == self.student_location.tolist():
-    #         return 100 - cold
-    #
-    #     # Unused goal state
-    #     if agent_location != self.student_location.tolist():
-    #         if agent_location in [goal.tolist() for goal in self.goal_states]:
-    #             # print('unused')
-    #             return -10 - cold
-    #
-    #     # Road
-    #     if agent_location[1] == 0:
-    #         return -0.5 - cold
-    #
-    #     # Everywhere else
-    #     else:
-    #         return -2 - cold
+        # Unused goal state
+        if not reached_terminal_state :
+            if agent_location in self.goal_states:
+                print('unused')
+                return -10 - cold
+
+        # Road
+        if agent_location[1] == 0:
+            return -0.5 - cold
+
+        # Everywhere else
+        else:
+            return -2 - cold

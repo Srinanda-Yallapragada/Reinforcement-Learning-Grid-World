@@ -24,11 +24,17 @@ tensorboard_log_dir = "./tensorboard_logs/"
 
 # Use deterministic actions for evaluation
 eval_callback = EvalCallback(eval_env, best_model_save_path="./logs/",
-                             log_path="./logs/", eval_freq=500,
+                             log_path="./logs/", eval_freq=1000,
                              deterministic=True, render=False)
 
-model = PPO("MultiInputPolicy", "GridWorld-v0", device='cpu', tensorboard_log=tensorboard_log_dir)
-model.learn(100000, callback=eval_callback)
+model = PPO(
+    "MultiInputPolicy",
+    "GridWorld-v0",
+    device="cpu",
+    tensorboard_log=tensorboard_log_dir,
+    learning_rate=0.0001,
+)
+model.learn(400000, callback=eval_callback)
 
 # Evaluate the trained model with human rendering
 env = gym.make("GridWorld-v0", render_mode="human")  # Enable human rendering
