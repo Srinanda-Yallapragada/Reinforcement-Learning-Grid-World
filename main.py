@@ -17,6 +17,7 @@ import final_proj_in  # Import the package to ensure registration happens
 # Separate evaluation env
 # eval_env = Monitor(gym.make("GridWorld-v0", render_mode="human"))
 eval_env = Monitor(gym.make("GridWorld-v0"))
+
 #
 
 # for tensorboard visualization
@@ -34,19 +35,24 @@ model = PPO(
     tensorboard_log=tensorboard_log_dir,
     learning_rate=0.0001,
 )
-model.learn(400000, callback=eval_callback)
+model.learn(100000, callback=eval_callback)
 
 # Evaluate the trained model with human rendering
-env = gym.make("GridWorld-v0", render_mode="human")  # Enable human rendering
+env = gym.make("GridWorld-v0", render_mode="rgb_array")
+env = gym.wrappers.RecordVideo(env=env, video_folder="./gifs", name_prefix="test-video",
+                               episode_trigger=lambda x: x % 2 == 0)
+
 obs, info = env.reset()
 done = False
 
 print("\n=== Visualizing the Trained Agent ===\n")
-while not done:
+count = 0
+while not done and count < 30:
+    count += 1
     action, _ = model.predict(obs, deterministic=True)  # Predict the action
     action = int(action)  # Convert NumPy array to plain integer
     obs, reward, done, truncated, info = env.step(action)  # Perform the step
-    env.render()  # Render the environment step-by-step
+    # env.render()  # Render the environment step-by-step
 print("Visualization Complete!")
 env.close()
 
