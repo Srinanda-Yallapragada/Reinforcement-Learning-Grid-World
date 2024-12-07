@@ -15,7 +15,9 @@ from stable_baselines3.common.monitor import Monitor
 import final_proj_in  # Import the package to ensure registration happens
 
 # Separate evaluation env
+# eval_env = Monitor(gym.make("GridWorld-v0", render_mode="human"))
 eval_env = Monitor(gym.make("GridWorld-v0"))
+#
 
 # for tensorboard visualization
 tensorboard_log_dir = "./tensorboard_logs/"
@@ -28,10 +30,9 @@ eval_callback = EvalCallback(eval_env, best_model_save_path="./logs/",
 model = PPO("MultiInputPolicy", "GridWorld-v0", device='cpu', tensorboard_log=tensorboard_log_dir)
 model.learn(100000, callback=eval_callback)
 
-
 # Evaluate the trained model with human rendering
 env = gym.make("GridWorld-v0", render_mode="human")  # Enable human rendering
-obs, info = env.reset()  # Unpack the tuple
+obs, info = env.reset()
 done = False
 
 print("\n=== Visualizing the Trained Agent ===\n")
@@ -42,6 +43,7 @@ while not done:
     env.render()  # Render the environment step-by-step
 print("Visualization Complete!")
 env.close()
+
 # ####################################################
 # import os
 # import gymnasium as gym

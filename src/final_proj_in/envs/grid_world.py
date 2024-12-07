@@ -6,118 +6,87 @@ import numpy as np
 
 
 class GridWorldEnv(gym.Env):
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 1}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
 
-    def __init__(self, render_mode=None, size=10):
-        self.size = size  # The size of the square grid
-        self.window_size = 512  # The size of the PyGame window
-        self.cold_val= 1
-        # Observations are dictionaries with the agent's and the target's location.
-        # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.Dict(
-            {
-                "agent": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-                "target": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-            }
-        )
+    def __init__(self, render_mode=None):
+        self.size = 10
+        self.cold_val = 1
+        self.window_size = 512
 
-        # We have 4 actions, corresponding to "right", "up", "left", "down", "right"
+        #
+        self.observation_space = spaces.Dict({
+            "student": spaces.Box(0, self.size - 1, shape=(2,), dtype=int),
+            "goal": spaces.Box(0, self.size - 1, shape=(2,), dtype=int),
+        })
+
+        # 4 actions to take in the gridworld
         self.action_space = spaces.Discrete(4)
-
-        """
-        The following dictionary maps abstract actions from `self.action_space` to 
-        the direction we will walk in if that action is taken.
-        I.e. 0 corresponds to "right", 1 to "up" etc.
-        """
-        self._action_to_direction = {
-            0: np.array([1, 0]),
-            1: np.array([0, 1]),
-            2: np.array([-1, 0]),
-            3: np.array([0, -1]),
+        self.actions = {
+            0: np.array([1, 0]),  # right
+            1: np.array([0, 1]),  # down
+            2: np.array([-1, 0]),  # left
+            3: np.array([0, -1]),  # up
         }
 
-        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        # for pygame rendering
         self.render_mode = render_mode
-
-        """
-        If human-rendering is used, `self.window` will be a reference
-        to the window that we draw to. `self.clock` will be a clock that is used
-        to ensure that the environment is rendered at the correct framerate in
-        human-mode. They will remain `None` until human-mode is used for the
-        first time.
-        """
         self.window = None
         self.clock = None
-        self.goal_states = [np.array([9, 9]), np.array([8, 8])]
-        self.warm_buildings= [[2, 3], [2, 4], [4, 6], [2, 8],[7,7],[7,3]]
-        self.road = [
-            [0, 0],
-            [1, 0],
-            [2, 0],
-            [3, 0],
-            [4, 0],
-            [5, 0],
-            [6, 0],
-            [7, 0],
-            [8, 0],
-            [9, 0],
-        ]
+
+        # These will be reset every time in the reset function
+        self.student_location = np.array([0, 0])  # Starting position
+        self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
+
+        self.goal_states = [[9, 9], [8, 8]]
+        self.warm_buildings = [[2, 3], [2, 4], [4, 6], [2, 8], [7, 7], [7, 3]]
+        self.road = [[x, 0] for x in range(10)]
 
     def _get_obs(self):
-        return {"agent": self._agent_location, "target": self._target_location}
-
-    def _get_info(self):
-        return {
-            "distance": np.linalg.norm(
-                self._agent_location - self._target_location, ord=1
-            )
-        }
+        return {"student": self.student_location, "goal": self.goal_location}
 
     def reset(self, seed=None, options=None):
-        # We need the following line to seed self.np_random
         super().reset(seed=seed)
 
-        # Choose the agent's location uniformly at random
-        # self._agent_location = self.np_random.integers(0, self.size, size=2, dtype=int)
-        self._agent_location = np.array([0,0])
+        # These will be reset every time in the reset function
+        self.student_location = np.array([0, 0])  # Starting position
+        self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
 
-        # We will sample the target's location randomly until it does not coincide with the agent's location
-        # self._target_location = self._agent_location
-        # while np.array_equal(self._target_location, self._agent_location):
-        #     self._target_location = self.np_random.integers(
-        #         0, self.size, size=2, dtype=int
-        #     )
-
-        # self._target_location = random.choice(self.goal_states)
-        self._target_location =np.array([9,9])
+        #self.goal_location= random.choice(self.goal_states)
         observation = self._get_obs()
-        info = self._get_info()
 
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, info
+        return observation, {}
 
     def step(self, action):
-        # Map the action (element of {0,1,2,3}) to the direction we walk in
-        direction = self._action_to_direction[action]
-        # We use `np.clip` to make sure we don't leave the grid
-        self._agent_location = np.clip(
-            self._agent_location + direction, 0, self.size - 1
+
+        # get action as a numpy array
+        direction = self.actions[action]
+
+        # student stays on the grid.
+        self.student_location = np.clip(
+            self.student_location + direction, 0, self.size - 1
         )
-        # An episode is done iff the agent has reached the target
-        terminated = np.array_equal(self._agent_location, self._target_location)
-        self.cold_val+=1 
-        # reward = 1 if terminated else 0  # Binary sparse rewards
-        reward= self.reward_fn()
+
+        # If reached terminal state, set to true
+        reached_terminal_state = np.array_equal(self.student_location, self.goal_location)
+
+        # for every step you are out in the cold, you get colder
+        # this value is reset if you reach a warm building
+        self.cold_val += 1
+
+        # reward = self.reward_fn()  # observed reward based on current location
+
+        reward = self.reward_fn(reached_terminal_state)  # observed reward based on current location
+        # reward = 1 if reached_terminal_state else 0  # Binary sparse rewards
 
         observation = self._get_obs()
-        info = self._get_info()
 
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, reward, terminated, False, info
+        return observation, reward, reached_terminal_state, False, {}
 
     def render(self):
         if self.render_mode == "rgb_array":
@@ -139,7 +108,7 @@ class GridWorldEnv(gym.Env):
         #
         # Draw warm buildings
         for i in self.warm_buildings:
-            i=np.array(i)
+            i = np.array(i)
             pygame.draw.rect(
                 canvas,
                 (255, 204, 153),
@@ -163,7 +132,7 @@ class GridWorldEnv(gym.Env):
             i = np.array(i)
             pygame.draw.rect(
                 canvas,
-                (128,128,128),
+                (128, 128, 128),
                 pygame.Rect(
                     pix_square_size * i,
                     (pix_square_size, pix_square_size),
@@ -174,7 +143,7 @@ class GridWorldEnv(gym.Env):
             canvas,
             (0, 153, 51),
             pygame.Rect(
-                pix_square_size * self._target_location,
+                pix_square_size * self.goal_location,
                 (pix_square_size, pix_square_size),
             ),
         )
@@ -182,7 +151,7 @@ class GridWorldEnv(gym.Env):
         pygame.draw.circle(
             canvas,
             (0, 0, 255),
-            (self._agent_location + 0.5) * pix_square_size,
+            (self.student_location + 0.5) * pix_square_size,
             pix_square_size / 3,
         )
 
@@ -222,28 +191,39 @@ class GridWorldEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
-    def reward_fn(self):
-        cold=self.cold_val
-        agent_location = self._agent_location.tolist()
-        # Buildings
-        if agent_location in self.warm_buildings:
-            self.cold_val = 1
-            return -0.1 - cold
+    def reward_fn(self, reached_terminal_state):
+        if reached_terminal_state:
+            print("good")
+            return 100
+        if self.student_location.tolist() in self.goal_states:
+            print("bad")
+            return -100
 
-        # Goal state
-        if agent_location == self._target_location.tolist():
-            return 100 - cold
+        # by default -2 for all snow locations
+        return -2
 
-        # Unused goal state
-        if agent_location != self._target_location.tolist():
-            if agent_location in [goal.tolist() for goal in self.goal_states]:
-                print('unused')
-                return -150 - cold
-
-        # Road
-        if agent_location[1] == 0:
-            return -0.5 - cold
-
-        # Everywhere else
-        else:
-            return -2 - cold
+    # def reward_fn(self):
+    #     cold = self.cold_val
+    #     agent_location = self.student_location.tolist()
+    #     # Buildings
+    #     if agent_location in self.warm_buildings:
+    #         self.cold_val = 1
+    #         return -0.1 - cold
+    #
+    #     # Goal state
+    #     if agent_location == self.student_location.tolist():
+    #         return 100 - cold
+    #
+    #     # Unused goal state
+    #     if agent_location != self.student_location.tolist():
+    #         if agent_location in [goal.tolist() for goal in self.goal_states]:
+    #             # print('unused')
+    #             return -10 - cold
+    #
+    #     # Road
+    #     if agent_location[1] == 0:
+    #         return -0.5 - cold
+    #
+    #     # Everywhere else
+    #     else:
+    #         return -2 - cold
