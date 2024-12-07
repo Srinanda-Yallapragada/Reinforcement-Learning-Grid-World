@@ -4,7 +4,7 @@ from stable_baselines3 import PPO, DQN, SAC
 # use DQN
 # SAC
 # PPO
-
+import numpy as np
 # certian class order per episodes rather than just 1 class, n classrooms, d classes in a day d is your schedule.
 
 # train only on some starting states, and see if it generalizes.
@@ -19,7 +19,7 @@ import final_proj_in  # Import the package to ensure registration happens
 eval_env = Monitor(gym.make("GridWorld-v0"))
 
 #
-
+np.random.seed(0)
 # for tensorboard visualization
 tensorboard_log_dir = "./tensorboard_logs/"
 
@@ -33,9 +33,11 @@ model = PPO(
     "GridWorld-v0",
     device="cpu",
     tensorboard_log=tensorboard_log_dir,
-    learning_rate=0.0001,
+    learning_rate=0.0002,
 )
-model.learn(100000, callback=eval_callback)
+# model.learn(500000, callback=eval_callback)
+
+model=PPO.load(path="./logs/best_model.zip")
 
 # Evaluate the trained model with human rendering
 env = gym.make("GridWorld-v0", render_mode="rgb_array")
@@ -43,6 +45,8 @@ env = gym.wrappers.RecordVideo(env=env, video_folder="./gifs", name_prefix="test
                                episode_trigger=lambda x: x % 2 == 0)
 
 obs, info = env.reset()
+print(obs)
+# obs = {"student": np.array([0, 0]), "goal": np.array([9, ])}
 done = False
 
 print("\n=== Visualizing the Trained Agent ===\n")

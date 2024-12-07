@@ -32,14 +32,15 @@ class GridWorldEnv(gym.Env):
         self.window = None
         self.clock = None
 
+        self.goal_states = [[9, 9], [4, 9],[9,4]]
+        self.warm_buildings = [[2, 3], [2, 4], [4, 6], [2, 8], [7, 7], [7, 3]]
+        # self.snow = []
+        self.snow = [[2, 5], [3, 5], [7,5],[6,5],[5,5]]
+        self.road = [[x, 0] for x in range(10)]
+
         # These will be reset every time in the reset function
         self.student_location = np.array([0, 0])  # Starting position
-        self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
-
-        self.goal_states = [[9, 9], [9, 4],[4,9]]
-        self.warm_buildings = [[2, 3], [2, 4], [4, 6], [2, 8], [7, 7], [7, 3]]
-        self.snow = [[2, 5],[3,5],[3,4]]
-        self.road = [[x, 0] for x in range(10)]
+        self.goal_location = np.array(random.choice(self.goal_states))
 
     def _get_obs(self):
         return {"student": self.student_location, "goal": self.goal_location}
@@ -74,7 +75,7 @@ class GridWorldEnv(gym.Env):
                 np.clip(self.student_location + direction, 0, self.size - 1),
                 self.student_location,
             ]
-            probabilities = [0.3, 0.7]
+            probabilities = [1,0]
             ind= np.random.choice(range(len(possible_next_states)), p=probabilities)
             self.student_location=possible_next_states[ind]
 
@@ -125,7 +126,7 @@ class GridWorldEnv(gym.Env):
             i = np.array(i)
             pygame.draw.rect(
                 canvas,
-                (255, 204, 153),
+                (128, 17, 9),
                 pygame.Rect(
                     pix_square_size * i,
                     (pix_square_size, pix_square_size),
@@ -136,7 +137,7 @@ class GridWorldEnv(gym.Env):
             i = np.array(i)
             pygame.draw.rect(
                 canvas,
-                (0, 38, 153),
+                (203, 243, 210),
                 pygame.Rect(
                     pix_square_size * i,
                     (pix_square_size, pix_square_size),
@@ -146,7 +147,7 @@ class GridWorldEnv(gym.Env):
             i = np.array(i)
             pygame.draw.rect(
                 canvas,
-                (128, 128, 128),
+                (139, 146, 156),
                 pygame.Rect(
                     pix_square_size * i,
                     (pix_square_size, pix_square_size),
@@ -156,7 +157,7 @@ class GridWorldEnv(gym.Env):
             i = np.array(i)
             pygame.draw.rect(
                 canvas,
-                (0, 250, 0),
+                (210, 200, 120),
                 pygame.Rect(
                     pix_square_size * i,
                     (pix_square_size, pix_square_size),
@@ -165,7 +166,7 @@ class GridWorldEnv(gym.Env):
         # First we draw the target
         pygame.draw.rect(
             canvas,
-            (0, 153, 51),
+            (8, 81, 67),
             pygame.Rect(
                 pix_square_size * self.goal_location,
                 (pix_square_size, pix_square_size),
@@ -174,7 +175,7 @@ class GridWorldEnv(gym.Env):
         # Now we draw the agent
         pygame.draw.circle(
             canvas,
-            (0, 0, 255),
+            (0, 0, 0),
             (self.student_location + 0.5) * pix_square_size,
             pix_square_size / 3,
         )
@@ -229,6 +230,8 @@ class GridWorldEnv(gym.Env):
     def reward_fn(self, reached_terminal_state):
         cold = self.cold_val
         agent_location = self.student_location.tolist()
+        # if agent_location in self.snow:
+        # print("snow")
 
         # Goal state
         if reached_terminal_state:
@@ -242,8 +245,7 @@ class GridWorldEnv(gym.Env):
         # Unused goal state
         if not reached_terminal_state :
             if agent_location in self.goal_states:
-                print('unused')
-                return -10 - cold
+                return 10 - cold
 
         # Road
         if agent_location[1] == 0:
