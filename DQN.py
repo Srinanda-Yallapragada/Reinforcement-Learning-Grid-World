@@ -79,7 +79,6 @@
 import gymnasium as gym
 
 from stable_baselines3 import PPO, DQN, SAC
-
 import numpy as np
 # certain class order per episodes rather than just 1 class, n classrooms, d classes in a day d is your schedule.
 # train only on some starting states, and see if it generalizes.
@@ -104,14 +103,14 @@ eval_callback = EvalCallback(eval_env, best_model_save_path="./logs/", log_path=
 # Initialize a model and define the environment
 model = DQN(
     "MultiInputPolicy",
-    "GridWorld-v0",
+    env="GridWorld-v0",
     device="cpu",
     tensorboard_log=tensorboard_log_dir,
-    learning_rate=0.0002,
+    learning_rate=0.01
 )
 
 #Model learning 
-model.learn(20000, callback=eval_callback)
+model.learn(10000, callback=eval_callback)
 
 # # Load the best model from the runs
 model=DQN.load(path="./logs/best_model.zip")

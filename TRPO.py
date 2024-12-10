@@ -29,7 +29,6 @@ model = TRPO(
     device="cpu",
     tensorboard_log=tensorboard_log_dir,
     learning_rate=0.02,
-    
 )
 
 #Model learning 
