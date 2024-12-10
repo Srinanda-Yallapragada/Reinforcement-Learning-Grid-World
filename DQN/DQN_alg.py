@@ -20,6 +20,7 @@ def DQN_run(lr, df):
     # For tensorboard visualization
     tensorboard_log_dir = "./DQN/results/tensorboard_logs/"
 
+    tb_log_name="LR"+str(lr)+"DF"+str(df)
     # Use deterministic actions for evaluation
     eval_callback = EvalCallback(eval_env, best_model_save_path="./DQN/results/logs/", log_path="./DQN/results/logs/", eval_freq=1000,deterministic=True, render=False)
 
@@ -29,11 +30,12 @@ def DQN_run(lr, df):
         env="GridWorld-v0",
         device="cpu",
         tensorboard_log=tensorboard_log_dir,
-        learning_rate=lr
+        learning_rate=lr,
+        gamma=df
     )
 
     #Model learning 
-    model.learn(100000, callback=eval_callback)
+    model.learn(300000, callback=eval_callback,tb_log_name=tb_log_name)
 
     # # Load the best model from the runs
     model=DQN.load(path="./DQN/results/logs/best_model.zip")
@@ -42,7 +44,7 @@ def DQN_run(lr, df):
     env = gym.make("GridWorld-v0", render_mode="rgb_array")
 
     # Save a video of the visualization
-    env = gym.wrappers.RecordVideo(env=env, video_folder="./gifs", name_prefix="test-video", episode_trigger=lambda x: x % 2 == 0)
+    env = gym.wrappers.RecordVideo(env=env, video_folder="./DQN/results/gifs", name_prefix="test-video", episode_trigger=lambda x: x % 2 == 0)
 
 
     print("\nRunning the Trained Agent\n")

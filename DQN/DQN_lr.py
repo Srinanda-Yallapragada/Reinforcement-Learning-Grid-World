@@ -1,16 +1,16 @@
 from DQN_alg import *
 
 # Gridsearch for learning rate and discount_factor 
-learning_rate=[0.01,0.0001,0.0002]
-discount_factor=[0.999,0.99]
+learning_rate=[0.0002]
+discount_factor=[0.999,0.5,0.9,0.99]
 
 count=1
 for lr in learning_rate:
     for df in discount_factor:
         print(f"Learning rate:{lr}, Discount factor:{df}")
         DQN_run(lr, df)
-        break
-    break
+        breal
+        
 
 # learning_rate= 0.0001
 

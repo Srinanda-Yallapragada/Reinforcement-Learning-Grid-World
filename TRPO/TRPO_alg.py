@@ -19,6 +19,7 @@ def TRPO_run(lr, df):
 
     # For tensorboard visualization
     tensorboard_log_dir = "./TRPO/results/tensorboard_logs/"
+    tb_log_name="LR"+str(lr)+"DF"+str(df)
 
     # Use deterministic actions for evaluation
     eval_callback = EvalCallback(eval_env, best_model_save_path="./TRPO/results/best_logs/", log_path="./TRPO/results/logs/", eval_freq=1000,deterministic=True, render=False)
@@ -29,14 +30,15 @@ def TRPO_run(lr, df):
         "GridWorld-v0",
         device="cpu",
         tensorboard_log=tensorboard_log_dir,
-        learning_rate=0.02,
+        learning_rate=lr,
+        gamma=df
     )
 
     #Model learning 
-    model.learn(50000, callback=eval_callback)
+    model.learn(120000, callback=eval_callback,tb_log_name=tb_log_name)
 
     # Load the best model from the runs
-    model=TRPO.load(path="./TRPO/results/best_logs/best_model.zip")
+    model=TRPO.load(path="./TRPO/results//best_logs/best_model.zip")
 
     # Evaluate the trained model
     env = gym.make("GridWorld-v0", render_mode="rgb_array")
