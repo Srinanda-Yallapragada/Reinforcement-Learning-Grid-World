@@ -1,6 +1,7 @@
 import gymnasium as gym
 
 from stable_baselines3 import PPO, DQN, SAC
+from sb3_contrib import TRPO
 
 import numpy as np
 # certain class order per episodes rather than just 1 class, n classrooms, d classes in a day d is your schedule.
@@ -14,29 +15,28 @@ import final_proj_in
 # Monitor evaluation environment
 eval_env = Monitor(gym.make("GridWorld-v0"))
 
-#Set random seed
-np.random.seed(0)
 
 # For tensorboard visualization
 tensorboard_log_dir = "./tensorboard_logs/"
 
 # Use deterministic actions for evaluation
-eval_callback = EvalCallback(eval_env, best_model_save_path="./logs/", log_path="./logs/", eval_freq=1000,deterministic=True, render=False)
+eval_callback = EvalCallback(eval_env, best_model_save_path="./best_logs/", log_path="./logs/", eval_freq=1000,deterministic=True, render=False)
 
 # Initialize a model and define the environment
-model = PPO(
+model = TRPO(
     "MultiInputPolicy",
     "GridWorld-v0",
     device="cpu",
     tensorboard_log=tensorboard_log_dir,
-    learning_rate=0.0002,
+    learning_rate=0.02,
+    
 )
 
 #Model learning 
-model.learn(200000, callback=eval_callback)
+model.learn(50000, callback=eval_callback)
 
-# # Load the best model from the runs
-# model=PPO.load(path="./logs/best_model.zip")
+# Load the best model from the runs
+model=TRPO.load(path="./best_logs/best_model.zip")
 
 # Evaluate the trained model
 env = gym.make("GridWorld-v0", render_mode="rgb_array")
