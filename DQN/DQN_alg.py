@@ -28,14 +28,18 @@ def DQN_run(lr, df):
     model = DQN(
         "MultiInputPolicy",
         env="GridWorld-v0",
-        device="cpu",
         tensorboard_log=tensorboard_log_dir,
         learning_rate=lr,
-        gamma=df
+        gamma=df,
+        # exploration_fraction=0.4,
+        # batch_size=64,
+        # target_update_interval=1000,
+        # verbose=1
+        # exploration_final_eps=0.1,
     )
 
     #Model learning 
-    model.learn(300000, callback=eval_callback,tb_log_name=tb_log_name)
+    model.learn(120000, callback=eval_callback,tb_log_name=tb_log_name)
 
     # # Load the best model from the runs
     model=DQN.load(path="./DQN/results/logs/best_model.zip")
