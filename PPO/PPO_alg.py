@@ -36,10 +36,10 @@ def PPO_run(lr, df):
     )
 
     #Model learning 
-    model.learn(120000, callback=eval_callback, log_interval=4,tb_log_name=tb_log_name)
+    model.learn(1200, callback=eval_callback, log_interval=4,tb_log_name=tb_log_name)
 
     # # Load the best model from the runs
-    # model=PPO.load(path="./logs/best_model.zip")
+    model=PPO.load(path="./PPO/results/best_logs/best_model.zip")
 
     # Evaluate the trained model
     env = gym.make("GridWorld-v0", render_mode="rgb_array")

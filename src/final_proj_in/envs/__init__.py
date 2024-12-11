@@ -27,22 +27,21 @@ class GridWorldEnv(gym.Env):
             3: np.array([0, -1]),  # up
         }
 
-        # for pygame rendering
         self.render_mode = render_mode
         self.window = None
         self.clock = None
 
         self.goal_states = [[9, 9], [4, 9],[9,7]]
         self.warm_buildings = [[2, 3], [2, 4], [4, 6], [2, 8], [7, 7], [7, 3]]
-        # self.snow = []
         self.snow = [[8, 0], [6, 0],[4,0]]
         self.road = [[x, 0] for x in range(10)]
 
         # These will be reset every time in the reset function
         self.student_location = np.array([0, 0])  # Starting position
         self.goal_location = np.array(random.choice(self.goal_states))
-
-    def _get_obs(self):
+        
+    # Helper method for formatting data
+    def observation_data(self):
         return {"student": self.student_location, "goal": self.goal_location}
 
     def reset(self, seed=None, options=None):
@@ -53,11 +52,11 @@ class GridWorldEnv(gym.Env):
         # self.goal_location = np.array([self.size - 1, self.size - 1])  # Goal position
 
         self.goal_location= np.array(random.choice(self.goal_states))
-        observation = self._get_obs()
+        observation = self.observation_data()
         self.cold_val=1
 
         if self.render_mode == "human":
-            self._render_frame()
+            self.display()
 
         return observation, {}
 
@@ -66,10 +65,7 @@ class GridWorldEnv(gym.Env):
         # get action as a numpy array
         direction = self.actions[action]
 
-        # student stays on the grid.
-        # self.student_location = np.clip(
-        #     self.student_location + direction, 0, self.size - 1
-        # )
+        # action probabilities and next states
         if self.student_location.tolist() in self.snow:
             possible_next_states = [
                 np.clip(self.student_location + direction, 0, self.size - 1),
@@ -87,151 +83,23 @@ class GridWorldEnv(gym.Env):
         # If reached terminal state, set to true
         reached_terminal_state = np.array_equal(self.student_location, self.goal_location)
 
-        # for every step you are out in the cold, you get colder
-        # this value is reset if you reach a warm building
+        # for every step you are out in the cold, you get colder, this value is reset if you reach a warm building
         self.cold_val += 1
 
-        # reward = self.reward_fn()  # observed reward based on current location
+        # observed reward based on current location
+        reward = self.reward_fn(reached_terminal_state)  
 
-        reward = self.reward_fn(reached_terminal_state)  # observed reward based on current location
-        # reward = 1 if reached_terminal_state else 0  # Binary sparse rewards
-
-        observation = self._get_obs()
+        observation = self.observation_data()
 
         if self.render_mode == "human":
-            self._render_frame()
+            self.display()
 
         return observation, reward, reached_terminal_state, False, {}
 
-    def render(self):
-        if self.render_mode == "rgb_array":
-            return self._render_frame()
-
-    def _render_frame(self):
-        if self.window is None and self.render_mode == "human":
-            pygame.init()
-            pygame.display.init()
-            self.window = pygame.display.set_mode((self.window_size, self.window_size))
-        if self.clock is None and self.render_mode == "human":
-            self.clock = pygame.time.Clock()
-
-        canvas = pygame.Surface((self.window_size, self.window_size))
-        canvas.fill((255, 255, 255))
-        pix_square_size = (
-                self.window_size / self.size
-        )  # The size of a single grid square in pixels
-        #
-        # Draw warm buildings
-        for i in self.warm_buildings:
-            i = np.array(i)
-            pygame.draw.rect(
-                canvas,
-                (128, 17, 9),
-                pygame.Rect(
-                    pix_square_size * i,
-                    (pix_square_size, pix_square_size),
-                ),
-            )
-        # Draw secondary targets
-        for i in self.goal_states:
-            i = np.array(i)
-            pygame.draw.rect(
-                canvas,
-                (203, 243, 210),
-                pygame.Rect(
-                    pix_square_size * i,
-                    (pix_square_size, pix_square_size),
-                ),
-            )
-        for i in self.road:
-            i = np.array(i)
-            pygame.draw.rect(
-                canvas,
-                (139, 146, 156),
-                pygame.Rect(
-                    pix_square_size * i,
-                    (pix_square_size, pix_square_size),
-                ),
-            )
-        for i in self.snow:
-            i = np.array(i)
-            pygame.draw.rect(
-                canvas,
-                (210, 200, 120),
-                pygame.Rect(
-                    pix_square_size * i,
-                    (pix_square_size, pix_square_size),
-                ),
-            )
-        # First we draw the target
-        pygame.draw.rect(
-            canvas,
-            (8, 81, 67),
-            pygame.Rect(
-                pix_square_size * self.goal_location,
-                (pix_square_size, pix_square_size),
-            ),
-        )
-        # Now we draw the agent
-        pygame.draw.circle(
-            canvas,
-            (0, 0, 0),
-            (self.student_location + 0.5) * pix_square_size,
-            pix_square_size / 3,
-        )
-
-        # Finally, add some gridlines
-        for x in range(self.size + 1):
-            pygame.draw.line(
-                canvas,
-                0,
-                (0, pix_square_size * x),
-                (self.window_size, pix_square_size * x),
-                width=3,
-            )
-            pygame.draw.line(
-                canvas,
-                0,
-                (pix_square_size * x, 0),
-                (pix_square_size * x, self.window_size),
-                width=3,
-            )
-
-        if self.render_mode == "human":
-            # The following line copies our drawings from `canvas` to the visible window
-            self.window.blit(canvas, canvas.get_rect())
-            pygame.event.pump()
-            pygame.display.update()
-
-            # We need to ensure that human-rendering occurs at the predefined framerate.
-            # The following line will automatically add a delay to keep the framerate stable.
-            self.clock.tick(self.metadata["render_fps"])
-        else:  # rgb_array
-            return np.transpose(
-                np.array(pygame.surfarray.pixels3d(canvas)), axes=(1, 0, 2)
-            )
-
-    def close(self):
-        if self.window is not None:
-            pygame.display.quit()
-            pygame.quit()
-
-    # def reward_fn(self, reached_terminal_state):
-    #     if reached_terminal_state:
-    #         print("good")
-    #         return 100
-    #     if self.student_location.tolist() in self.goal_states:
-    #         print("bad")
-    #         return -100
-
-    #     # by default -2 for all snow locations
-    #     return -2
 
     def reward_fn(self, reached_terminal_state):
         cold = self.cold_val
         agent_location = self.student_location.tolist()
-        # if agent_location in self.snow:
-        # print("snow")
 
         # Goal state
         if reached_terminal_state:
@@ -254,3 +122,69 @@ class GridWorldEnv(gym.Env):
         # Everywhere else
         else:
             return -2 - cold
+
+    # Helper Methods for displaying data
+    def render(self):
+        if self.render_mode == "rgb_array":
+            return self.display()
+
+    def display(self):
+
+        if self.render_mode=="human":
+            # Initialize window
+            if self.window is None:
+                pygame.init()
+                pygame.display.init()
+                self.window = pygame.display.set_mode((self.window_size, self.window_size))
+            # Start clock
+            if self.clock is None:
+                self.clock = pygame.time.Clock()
+        # create window
+        surface = pygame.Surface((self.window_size, self.window_size))
+        surface.fill((255, 255, 255))
+        box = (self.window_size / self.size)  
+
+        
+        # Draw warm buildings
+        for i in self.warm_buildings:
+            i = np.array(i)
+            pygame.draw.rect(surface, (128, 17, 9), pygame.Rect(box * i, (box, box)))
+
+        # Draw second targets
+        for i in self.goal_states:
+            i = np.array(i)
+            pygame.draw.rect(surface, (203, 243, 210), pygame.Rect(box * i,(box, box)))
+
+        # Draw road
+        for i in self.road:
+            i = np.array(i)
+            pygame.draw.rect(surface, (139, 146, 156), pygame.Rect(box * i,(box, box)))
+            
+        for i in self.snow:
+            i = np.array(i)
+            pygame.draw.rect(surface, (210, 200, 120), pygame.Rect(box * i,(box, box)))
+       
+       # Draw the target
+        pygame.draw.rect(surface, (8, 81, 67), pygame.Rect(box * self.goal_location,(box, box)))
+        # Draw agent
+        pygame.draw.circle(surface, (0, 0, 0), (self.student_location + 0.5) * box, box/3)
+
+        # Draw gridlines
+        for x in range(self.size + 1):
+            pygame.draw.line(surface, 0, (0, box * x), (self.window_size, box * x), width=1)
+            pygame.draw.line(surface, 0, (box * x, 0), (box * x, self.window_size), width=1)
+
+        if self.render_mode == "human":
+            self.window.blit(surface, surface.get_rect())
+            pygame.event.pump()
+            pygame.display.update()
+            self.clock.tick(self.metadata["render_fps"])
+        else: 
+            return np.transpose(
+                np.array(pygame.surfarray.pixels3d(surface)), axes=(1, 0, 2)
+            )
+
+    def close(self):
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()

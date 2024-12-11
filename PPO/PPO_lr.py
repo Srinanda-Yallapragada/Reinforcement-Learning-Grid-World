@@ -9,6 +9,8 @@ for lr in learning_rate:
     for df in discount_factor:
         print(f"Learning rate:{lr}, Discount factor:{df}")
         PPO_run(lr, df)
+        break
+    break
 
 # learning_rate= 0.0001
 
