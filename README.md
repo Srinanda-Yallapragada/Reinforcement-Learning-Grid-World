@@ -30,11 +30,14 @@ after training on the algorithms in results is seen with the lines. A report det
 formalization: RL_Report.pdf
 
 # Results
+The 3 algorithms which were run on the MDP were DQN, PPO and TRPO. 
 With the implementation of the MDP, the returns at the end of training were in the range of [35,42] with
 different goal states over a series of episodes, except for DQN which performed slightly poorer. The average
 episode lengths lied between 14 and 18, since the range for different return states was different. All three
 algorithms found a policy which led them to use the road initially, followed by trying to make it into the
-warm buildings which are on the way to the final terminal states. A report detailing the results: RL_Report.pdf
+warm buildings which are on the way to the final terminal states. 
+A report detailing the results: RL_Report.pdf
+Results including gifs and logs for each algorithm is present in /Algorithms/ 
 
 
 # References
